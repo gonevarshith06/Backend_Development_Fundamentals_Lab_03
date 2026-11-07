@@ -46,12 +46,16 @@ bds/
     ├── take-screenshots.js
     ├── README.md
     └── screenshots/
+        ├── 00-get-root-welcome.png
         ├── 01-get-books-all.png
         ├── 02-get-books-search.png
         ├── 03-get-books-filter-sort.png
         ├── 04-get-books-pagination.png
         ├── 05-get-book-single.png
         ├── 06-get-book-404.png
+        ├── 07-get-books-sort-desc.png
+        ├── 08-get-books-search-multiple.png
+        ├── 09-get-books-sort-pages-desc.png
         ├── 07-post-validation-missing-title-400.png
         ├── 08-post-validation-invalid-price-400.png
         ├── 09-post-book-success-201.png
@@ -176,95 +180,121 @@ Server Running at http://localhost:3000/
 
 ---
 
-## Screenshots (Captured with Playwright in Google Chrome)
+## Screenshots (Real Browser Output)
 
-> All screenshots below were taken using **Playwright** controlling **Google Chrome**, sending live requests to the running Express server and SQLite database.
+### 1. GET `/` (API Overview & Student Details)
+Status: `200 OK`. Root endpoint returning student metadata and API features.
 
-### 1. GET `/books` (Default Search - All Books with Limit 10)
+![GET API Overview](screenshots/00-get-root-welcome.png)
+
+---
+
+### 2. GET `/books` (Default Collection - All Books with Limit 10)
 Status: `200 OK`. Returns initial collection paginated by default.
 
 ![GET All Books](screenshots/01-get-books-all.png)
 
 ---
 
-### 2. GET `/books?search_q=Harry` (Title Search with LIKE)
+### 3. GET `/books?search_q=Harry` (Title Search with LIKE)
 Status: `200 OK`. Filters books whose titles match substring `Harry`.
 
 ![GET Books Search](screenshots/02-get-books-search.png)
 
 ---
 
-### 3. GET `/books?min_price=300&max_price=550&order_by=price&order=ASC` (Price Filter & Sort)
+### 4. GET `/books?min_price=300&max_price=550&order_by=price&order=ASC` (Price Filter & Sort ASC)
 Status: `200 OK`. Returns books within the price range sorted ascending by price.
 
 ![GET Books Filter and Sort](screenshots/03-get-books-filter-sort.png)
 
 ---
 
-### 4. GET `/books?limit=3&offset=3` (Pagination)
+### 5. GET `/books?limit=3&offset=3` (Pagination: Limit & Offset)
 Status: `200 OK`. Demonstrates pagination by skipping the first 3 records and returning the next 3.
 
 ![GET Books Pagination](screenshots/04-get-books-pagination.png)
 
 ---
 
-### 5. GET `/books/1` (Single Book Record)
+### 6. GET `/books/1` (Single Book Record)
 Status: `200 OK`. Retrieves a specific book by primary key ID.
 
 ![GET Single Book](screenshots/05-get-book-single.png)
 
 ---
 
-### 6. GET `/books/999` (404 Not Found for Non-Existent ID)
+### 7. GET `/books/999` (404 Not Found for Non-Existent ID)
 Status: `404 Not Found`. Returns consistent JSON error `{ "error": "Book Not Found" }`.
 
 ![GET Non-Existent Book 404](screenshots/06-get-book-404.png)
 
 ---
 
-### 7. POST `/books` (Validation: Missing Title Rejection)
+### 8. GET `/books?order_by=price&order=DESC` (Sort Descending by Price)
+Status: `200 OK`. Demonstrates descending sort order (`order=DESC`) from highest price to lowest price.
+
+![GET Books Sort Descending by Price](screenshots/07-get-books-sort-desc.png)
+
+---
+
+### 9. GET `/books?search_q=Clean` (Search Matching Multiple Books)
+Status: `200 OK`. Demonstrates partial title search returning multiple matching results (`Clean Code` and `Clean Architecture`).
+
+![GET Books Search Multiple](screenshots/08-get-books-search-multiple.png)
+
+---
+
+### 10. GET `/books?order_by=pages&order=DESC` (Sort by Page Count Descending)
+Status: `200 OK`. Demonstrates sorting by `pages` in descending order from highest page count to lowest page count.
+
+![GET Books Sort Descending by Pages](screenshots/09-get-books-sort-pages-desc.png)
+
+---
+
+### 11. POST `/books` (Validation: Missing Title Rejection)
 Status: `400 Bad Request`. Rejects requests missing the `title` field.
 
 ![POST Validation Missing Title](screenshots/07-post-validation-missing-title-400.png)
 
 ---
 
-### 8. POST `/books` (Validation: Non-Numeric Price Rejection)
+### 12. POST `/books` (Validation: Non-Numeric Price Rejection)
 Status: `400 Bad Request`. Rejects requests when `price` is not a valid number.
 
 ![POST Validation Invalid Price](screenshots/08-post-validation-invalid-price-400.png)
 
 ---
 
-### 9. POST `/books` (Successful Creation)
+### 13. POST `/books` (Successful Creation)
 Status: `201 Created`. Inserts record into database and returns assigned `bookId`.
 
 ![POST Book Success](screenshots/09-post-book-success-201.png)
 
 ---
 
-### 10. PUT `/books/:bookId` (Successful Update)
+### 14. PUT `/books/:bookId` (Successful Update)
 Status: `200 OK`. Updates existing book fields and returns `{ "message": "Book Details Updated" }`.
 
 ![PUT Book Success](screenshots/10-put-book-success-200.png)
 
 ---
 
-### 11. PUT `/books/9999` (Update Non-Existent ID)
+### 15. PUT `/books/9999` (Update Non-Existent ID)
 Status: `404 Not Found`. Rejects update when `changes === 0`.
 
 ![PUT Non-Existent Book 404](screenshots/11-put-book-404.png)
 
 ---
 
-### 12. DELETE `/books/:bookId` (Successful Deletion)
+### 16. DELETE `/books/:bookId` (Successful Deletion)
 Status: `200 OK`. Deletes the book and returns `{ "message": "Book Removed" }`.
 
 ![DELETE Book Success](screenshots/12-delete-book-success-200.png)
 
 ---
 
-### 13. GET `/books/:bookId` (Verify Deletion)
+### 17. GET `/books/:bookId` (Verify Deletion)
 Status: `404 Not Found`. Confirms that the deleted book is no longer in the database.
 
 ![GET Book After Delete 404](screenshots/13-get-book-after-delete-404.png)
