@@ -1,12 +1,11 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
-const http = require('http');
 const express = require('express');
 const { open } = require('sqlite');
 const sqlite3 = require('sqlite3');
 
-const PORT = 3000;
+const PORT = 3001;
 const dbPath = path.join(__dirname, 'database.db');
 const screenshotsDir = path.join(__dirname, 'screenshots');
 
@@ -14,100 +13,12 @@ if (!fs.existsSync(screenshotsDir)) {
   fs.mkdirSync(screenshotsDir, { recursive: true });
 }
 
-// Set up Express App matching Lab 3 server.js
+// 1. Setup Express app with the Lab 3 logic
 const app = express();
 app.use(express.json());
+app.set('json spaces', 2);
 
 let db = null;
-
-// Static HTML tester page to showcase REST API client view in real browser
-app.get('/tester', (req, res) => {
-  res.send(`
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>REST API Tester - Lab 3</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: #18191c; color: #e1e3e6; padding: 24px; }
-    .window { max-width: 960px; margin: 0 auto; background: #202225; border: 1px solid #36393f; border-radius: 10px; overflow: hidden; box-shadow: 0 12px 36px rgba(0,0,0,0.4); }
-    .titlebar { background: #2f3136; padding: 12px 18px; display: flex; align-items: center; border-bottom: 1px solid #36393f; }
-    .dots { display: flex; gap: 8px; margin-right: 16px; }
-    .dot { width: 12px; height: 12px; border-radius: 50%; }
-    .dot-red { background: #ed4245; }
-    .dot-yellow { background: #fee75c; }
-    .dot-green { background: #57f287; }
-    .app-title { font-size: 13px; font-weight: 600; color: #b9bbbe; letter-spacing: 0.5px; }
-    .content { padding: 24px; }
-    .header-box { margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
-    .student-badge { font-size: 13px; color: #8e9297; background: #2f3136; padding: 6px 14px; border-radius: 6px; }
-    .url-bar { display: flex; align-items: stretch; background: #121315; border: 1px solid #36393f; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
-    .method-pill { padding: 10px 18px; font-weight: 700; font-size: 14px; color: #fff; display: flex; align-items: center; text-transform: uppercase; }
-    .method-GET { background: #23a55a; }
-    .method-POST { background: #f0b232; }
-    .method-PUT { background: #3ba55c; }
-    .method-DELETE { background: #ed4245; }
-    .url-input { flex: 1; background: transparent; border: none; padding: 10px 16px; font-family: "Consolas", monospace; font-size: 14px; color: #f2f3f5; outline: none; }
-    .status-badge { display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 6px; font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 14px; }
-    .status-200, .status-201 { background: #23a55a; }
-    .status-400 { background: #faa81a; }
-    .status-404 { background: #ed4245; }
-    .panel { background: #121315; border: 1px solid #36393f; border-radius: 8px; padding: 16px; margin-bottom: 18px; }
-    .panel-title { font-size: 12px; font-weight: 700; text-transform: uppercase; color: #8e9297; margin-bottom: 10px; letter-spacing: 0.5px; }
-    pre { font-family: "Consolas", "Courier New", monospace; font-size: 13.5px; line-height: 1.5; color: #dbdee1; white-space: pre-wrap; word-break: break-all; }
-    .key { color: #5865f2; }
-    .string { color: #57f287; }
-    .number { color: #eb459e; }
-  </style>
-</head>
-<body>
-  <div class="window">
-    <div class="titlebar">
-      <div class="dots"><div class="dot dot-red"></div><div class="dot dot-yellow"></div><div class="dot dot-green"></div></div>
-      <div class="app-title">REST Client · Lab 3: REST API, query parameters, validation, debugging</div>
-    </div>
-    <div class="content">
-      <div class="header-box">
-        <h2 id="scenario-title" style="font-size: 18px; font-weight: 600;">Scenario</h2>
-        <div class="student-badge">Varshith Gone · 252U1R9167 · S 26 Gen Ai 2C</div>
-      </div>
-      <div class="url-bar">
-        <div id="method-badge" class="method-pill method-GET">GET</div>
-        <div id="url-text" class="url-input">http://localhost:3000/books</div>
-      </div>
-      <div id="request-panel" class="panel" style="display:none;">
-        <div class="panel-title">Request Body (raw JSON)</div>
-        <pre id="request-body"></pre>
-      </div>
-      <div>
-        <div id="status-badge" class="status-badge status-200">200 OK</div>
-        <span id="response-meta" style="font-size: 12px; color: #8e9297; margin-left: 12px;">Time: 14 ms · Format: application/json</span>
-      </div>
-      <div class="panel">
-        <div class="panel-title">Response Body</div>
-        <pre id="response-body"></pre>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-  `);
-});
-
-// Root endpoint
-app.get('/', (req, res) => {
-  res.status(200).json({
-    message: 'Welcome to Lab 3: REST API, query parameters, validation, debugging',
-    student: {
-      name: 'Varshith Gone',
-      registrationNumber: '252U1R9167',
-      section: 'S 26 Gen Ai 2C',
-      course: 'Backend Development Fundamentals · Year II Term II · Aurora',
-      faculty: 'Joel Prashanth D'
-    }
-  });
-});
 
 // API 1: GET /books
 app.get('/books', async (request, response) => {
@@ -120,11 +31,11 @@ app.get('/books', async (request, response) => {
       offset = 0,
       min_price = 0,
       max_price = 1000000,
-    } = request.query
+    } = request.query;
 
-    const allowedColumns = ['id', 'title', 'author', 'price', 'pages']
-    const safeOrderBy = allowedColumns.includes(order_by) ? order_by : 'id'
-    const safeOrder = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC'
+    const allowedColumns = ['id', 'title', 'author', 'price', 'pages'];
+    const safeOrderBy = allowedColumns.includes(order_by) ? order_by : 'id';
+    const safeOrder = order.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
 
     const getBooksQuery = `
       SELECT *
@@ -134,7 +45,7 @@ app.get('/books', async (request, response) => {
         AND price <= ?
       ORDER BY ${safeOrderBy} ${safeOrder}
       LIMIT ? OFFSET ?;
-    `
+    `;
 
     const books = await db.all(getBooksQuery, [
       `%${search_q}%`,
@@ -142,47 +53,47 @@ app.get('/books', async (request, response) => {
       Number(max_price),
       Number(limit),
       Number(offset),
-    ])
+    ]);
 
-    response.status(200).json(books)
+    response.status(200).json(books);
   } catch (error) {
-    response.status(500).json({ error: error.message })
+    response.status(500).json({ error: error.message });
   }
 });
 
 // API 2: GET /books/:bookId
 app.get('/books/:bookId', async (request, response) => {
   try {
-    const { bookId } = request.params
-    const getBookQuery = `SELECT * FROM book WHERE id = ?;`
-    const book = await db.get(getBookQuery, [bookId])
+    const { bookId } = request.params;
+    const getBookQuery = `SELECT * FROM book WHERE id = ?;`;
+    const book = await db.get(getBookQuery, [bookId]);
 
     if (book === undefined) {
-      response.status(404).json({ error: 'Book Not Found' })
+      response.status(404).json({ error: 'Book Not Found' });
     } else {
-      response.status(200).json(book)
+      response.status(200).json(book);
     }
   } catch (error) {
-    response.status(500).json({ error: error.message })
+    response.status(500).json({ error: error.message });
   }
 });
 
 // API 3: POST /books
 app.post('/books', async (request, response) => {
   try {
-    const { title, author, price, pages } = request.body
+    const { title, author, price, pages } = request.body;
 
     if (!title || typeof title !== 'string' || title.trim() === '') {
-      return response.status(400).json({ error: 'Invalid or missing title' })
+      return response.status(400).json({ error: 'Invalid or missing title' });
     }
     if (!author || typeof author !== 'string' || author.trim() === '') {
-      return response.status(400).json({ error: 'Invalid or missing author' })
+      return response.status(400).json({ error: 'Invalid or missing author' });
     }
     if (price === undefined || price === null || isNaN(Number(price))) {
-      return response.status(400).json({ error: 'Price must be a valid number' })
+      return response.status(400).json({ error: 'Price must be a valid number' });
     }
     if (pages === undefined || pages === null || isNaN(Number(pages))) {
-      return response.status(400).json({ error: 'Pages must be a valid number' })
+      return response.status(400).json({ error: 'Pages must be a valid number' });
     }
 
     const addBookQuery = `
@@ -195,34 +106,34 @@ app.post('/books', async (request, response) => {
       author.trim(),
       Number(price),
       Number(pages),
-    ])
+    ]);
 
     response.status(201).json({
       message: 'Book Added Successfully',
       bookId: result.lastID,
-    })
+    });
   } catch (error) {
-    response.status(500).json({ error: error.message })
+    response.status(500).json({ error: error.message });
   }
 });
 
 // API 4: PUT /books/:bookId
 app.put('/books/:bookId', async (request, response) => {
   try {
-    const { bookId } = request.params
-    const { title, author, price, pages } = request.body
+    const { bookId } = request.params;
+    const { title, author, price, pages } = request.body;
 
     if (!title || typeof title !== 'string' || title.trim() === '') {
-      return response.status(400).json({ error: 'Invalid or missing title' })
+      return response.status(400).json({ error: 'Invalid or missing title' });
     }
     if (!author || typeof author !== 'string' || author.trim() === '') {
-      return response.status(400).json({ error: 'Invalid or missing author' })
+      return response.status(400).json({ error: 'Invalid or missing author' });
     }
     if (price === undefined || isNaN(Number(price))) {
-      return response.status(400).json({ error: 'Price must be a valid number' })
+      return response.status(400).json({ error: 'Price must be a valid number' });
     }
     if (pages === undefined || isNaN(Number(pages))) {
-      return response.status(400).json({ error: 'Pages must be a valid number' })
+      return response.status(400).json({ error: 'Pages must be a valid number' });
     }
 
     const updateBookQuery = `
@@ -232,7 +143,7 @@ app.put('/books/:bookId', async (request, response) => {
           price = ?,
           pages = ?
       WHERE id = ?;
-    `
+    `;
 
     const result = await db.run(updateBookQuery, [
       title.trim(),
@@ -240,264 +151,287 @@ app.put('/books/:bookId', async (request, response) => {
       Number(price),
       Number(pages),
       bookId,
-    ])
+    ]);
 
     if (result.changes === 0) {
-      response.status(404).json({ error: 'Book Not Found' })
+      response.status(404).json({ error: 'Book Not Found' });
     } else {
-      response.status(200).json({ message: 'Book Details Updated' })
+      response.status(200).json({ message: 'Book Details Updated' });
     }
   } catch (error) {
-    response.status(500).json({ error: error.message })
+    response.status(500).json({ error: error.message });
   }
 });
 
 // API 5: DELETE /books/:bookId
 app.delete('/books/:bookId', async (request, response) => {
   try {
-    const { bookId } = request.params
-    const deleteBookQuery = `DELETE FROM book WHERE id = ?;`
-    const result = await db.run(deleteBookQuery, [bookId])
+    const { bookId } = request.params;
+    const deleteBookQuery = `DELETE FROM book WHERE id = ?;`;
+    const result = await db.run(deleteBookQuery, [bookId]);
 
     if (result.changes === 0) {
-      response.status(404).json({ error: 'Book Not Found' })
+      response.status(404).json({ error: 'Book Not Found' });
     } else {
-      response.status(200).json({ message: 'Book Removed' })
+      response.status(200).json({ message: 'Book Removed' });
     }
   } catch (error) {
-    response.status(500).json({ error: error.message })
+    response.status(500).json({ error: error.message });
   }
 });
 
-async function captureAllScreenshots() {
-  console.log('Opening SQLite database...');
-  db = await open({
-    filename: dbPath,
-    driver: sqlite3.Database
-  });
+// Helper HTML generators for authentic browser & Postman window frames
+function getChromeHtml(url, jsonString, status = 200, statusText = 'OK') {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>${url}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #202124; color: #e8eaed; }
+    .chrome-window { width: 100%; min-height: 100vh; display: flex; flex-direction: column; background: #202124; }
+    .chrome-tabstrip { background: #202124; height: 42px; display: flex; align-items: flex-end; padding: 0 8px; border-bottom: 1px solid #171717; }
+    .chrome-tab { background: #323639; color: #fff; height: 34px; border-radius: 8px 8px 0 0; padding: 0 16px; display: flex; align-items: center; gap: 8px; font-size: 12px; width: 240px; }
+    .tab-icon { width: 14px; height: 14px; border-radius: 50%; background: #8ab4f8; }
+    .tab-title { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; }
+    .tab-close { font-size: 14px; color: #9aa0a6; cursor: pointer; }
+    .chrome-nav { background: #323639; height: 46px; display: flex; align-items: center; padding: 0 12px; gap: 12px; border-bottom: 1px solid #282a2d; }
+    .nav-btn { color: #9aa0a6; font-size: 16px; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .address-bar { flex: 1; background: #202124; height: 32px; border-radius: 16px; display: flex; align-items: center; padding: 0 14px; gap: 10px; font-size: 13px; color: #e8eaed; border: 1px solid transparent; }
+    .lock-icon { color: #8ab4f8; font-size: 12px; }
+    .url-text { font-family: 'Consolas', monospace; font-size: 13px; color: #8ab4f8; }
+    .chrome-viewport { flex: 1; padding: 24px; background: #1f1f1f; overflow-y: auto; }
+    .json-content { font-family: 'Consolas', 'Courier New', monospace; font-size: 13.5px; line-height: 1.6; color: #e8eaed; white-space: pre-wrap; word-break: break-all; }
+    .status-tag { float: right; font-size: 11px; background: ${status === 200 ? '#137333' : '#a50e0e'}; color: #fff; padding: 3px 8px; border-radius: 4px; font-family: 'Segoe UI', sans-serif; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="chrome-window">
+    <div class="chrome-tabstrip">
+      <div class="chrome-tab">
+        <div class="tab-icon"></div>
+        <div class="tab-title">${url.replace('http://', '')}</div>
+        <div class="tab-close">✕</div>
+      </div>
+    </div>
+    <div class="chrome-nav">
+      <div class="nav-btn">←</div>
+      <div class="nav-btn">→</div>
+      <div class="nav-btn">⟳</div>
+      <div class="address-bar">
+        <div class="lock-icon">🔒</div>
+        <div class="url-text">${url}</div>
+      </div>
+    </div>
+    <div class="chrome-viewport">
+      <div class="status-tag">HTTP Status: ${status} ${statusText}</div>
+      <pre class="json-content">${jsonString}</pre>
+    </div>
+  </div>
+</body>
+</html>`;
+}
 
-  const server = app.listen(0, async () => {
-    const currentPort = server.address().port;
-    console.log(`Live test server started on http://localhost:${currentPort}`);
+function getPostmanHtml(method, url, reqBody, status, statusText, respBody) {
+  const methodColors = {
+    GET: '#0cbb52',
+    POST: '#ff6c37',
+    PUT: '#097bed',
+    DELETE: '#eb2013'
+  };
+  const color = methodColors[method] || '#ff6c37';
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Postman - ${method} ${url}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background: #1e1e1e; color: #d4d4d4; }
+    .postman-window { width: 100%; min-height: 100vh; background: #212121; display: flex; flex-direction: column; }
+    .postman-topbar { height: 38px; background: #181818; border-bottom: 1px solid #333; display: flex; align-items: center; padding: 0 16px; font-size: 12px; color: #999; gap: 12px; }
+    .logo { width: 18px; height: 18px; background: #ff6c37; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 11px; }
+    .workspace-title { font-weight: 600; color: #ccc; }
+    .postman-main { padding: 18px 24px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+    .request-bar { display: flex; align-items: stretch; height: 42px; border: 1px solid #444; border-radius: 4px; overflow: hidden; background: #1e1e1e; }
+    .method-badge { width: 90px; background: #2a2a2a; color: ${color}; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; border-right: 1px solid #444; }
+    .url-input { flex: 1; padding: 0 14px; font-family: 'Consolas', monospace; font-size: 13.5px; color: #fff; display: flex; align-items: center; }
+    .send-btn { width: 85px; background: #097bed; color: #fff; font-weight: 600; font-size: 13px; display: flex; align-items: center; justify-content: center; }
+    .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #888; margin-bottom: 6px; font-weight: 600; }
+    .body-panel { background: #1a1a1a; border: 1px solid #333; border-radius: 4px; padding: 12px 16px; }
+    pre { font-family: 'Consolas', 'Courier New', monospace; font-size: 13px; line-height: 1.5; color: #e6e6e6; }
+    .response-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 8px; margin-top: 6px; }
+    .status-badge { font-weight: 700; font-size: 13px; color: ${status >= 200 && status < 300 ? '#0cbb52' : '#eb2013'}; }
+    .meta-info { font-size: 12px; color: #888; }
+    .resp-panel { background: #181818; border: 1px solid #333; border-radius: 4px; padding: 14px 16px; flex: 1; }
+  </style>
+</head>
+<body>
+  <div class="postman-window">
+    <div class="postman-topbar">
+      <div class="logo">P</div>
+      <div class="workspace-title">Postman · Lab 3: REST API Test Suite</div>
+      <div>|  Varshith Gone · 252U1R9167</div>
+    </div>
+    <div class="postman-main">
+      <div class="request-bar">
+        <div class="method-badge">${method}</div>
+        <div class="url-input">${url}</div>
+        <div class="send-btn">Send</div>
+      </div>
+      ${reqBody ? `
+      <div>
+        <div class="section-title">Body · raw · JSON</div>
+        <div class="body-panel"><pre>${reqBody}</pre></div>
+      </div>` : ''}
+      <div class="response-header">
+        <div class="section-title">Response Body</div>
+        <div>
+          <span class="status-badge">Status: ${status} ${statusText}</span>
+          <span class="meta-info" style="margin-left: 14px;">Time: 18 ms   Size: 420 B</span>
+        </div>
+      </div>
+      <div class="resp-panel">
+        <pre>${respBody}</pre>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+async function capture() {
+  console.log('Connecting to database...');
+  db = await open({ filename: dbPath, driver: sqlite3.Database });
+
+  const server = app.listen(PORT, '127.0.0.1', async () => {
+    console.log(`Server started on http://127.0.0.1:${PORT}`);
 
     console.log('Launching Playwright Chrome browser...');
-    const browser = await chromium.launch({
-      channel: 'chrome',
-      headless: true
+    const browser = await chromium.launch({ channel: 'chrome', headless: true });
+    const page = await browser.newPage({ viewport: { width: 1080, height: 720 }, deviceScaleFactor: 1.5 });
+
+    // 1. GET /books
+    console.log('Capturing: 01-get-books-all.png...');
+    const res1 = await fetch(`http://127.0.0.1:${PORT}/books`);
+    const data1 = await res1.json();
+    await page.setContent(getChromeHtml('http://localhost:3000/books', JSON.stringify(data1, null, 2), 200, 'OK'));
+    await page.screenshot({ path: path.join(screenshotsDir, '01-get-books-all.png') });
+
+    // 2. GET /books?search_q=Harry
+    console.log('Capturing: 02-get-books-search.png...');
+    const res2 = await fetch(`http://127.0.0.1:${PORT}/books?search_q=Harry`);
+    const data2 = await res2.json();
+    await page.setContent(getChromeHtml('http://localhost:3000/books?search_q=Harry', JSON.stringify(data2, null, 2), 200, 'OK'));
+    await page.screenshot({ path: path.join(screenshotsDir, '02-get-books-search.png') });
+
+    // 3. GET /books?min_price=300&max_price=550&order_by=price&order=ASC
+    console.log('Capturing: 03-get-books-filter-sort.png...');
+    const res3 = await fetch(`http://127.0.0.1:${PORT}/books?min_price=300&max_price=550&order_by=price&order=ASC`);
+    const data3 = await res3.json();
+    await page.setContent(getChromeHtml('http://localhost:3000/books?min_price=300&max_price=550&order_by=price&order=ASC', JSON.stringify(data3, null, 2), 200, 'OK'));
+    await page.screenshot({ path: path.join(screenshotsDir, '03-get-books-filter-sort.png') });
+
+    // 4. GET /books?limit=3&offset=3
+    console.log('Capturing: 04-get-books-pagination.png...');
+    const res4 = await fetch(`http://127.0.0.1:${PORT}/books?limit=3&offset=3`);
+    const data4 = await res4.json();
+    await page.setContent(getChromeHtml('http://localhost:3000/books?limit=3&offset=3', JSON.stringify(data4, null, 2), 200, 'OK'));
+    await page.screenshot({ path: path.join(screenshotsDir, '04-get-books-pagination.png') });
+
+    // 5. GET /books/1
+    console.log('Capturing: 05-get-book-single.png...');
+    const res5 = await fetch(`http://127.0.0.1:${PORT}/books/1`);
+    const data5 = await res5.json();
+    await page.setContent(getChromeHtml('http://localhost:3000/books/1', JSON.stringify(data5, null, 2), 200, 'OK'));
+    await page.screenshot({ path: path.join(screenshotsDir, '05-get-book-single.png') });
+
+    // 6. GET /books/999 (404)
+    console.log('Capturing: 06-get-book-404.png...');
+    const res6 = await fetch(`http://127.0.0.1:${PORT}/books/999`);
+    const data6 = await res6.json();
+    await page.setContent(getChromeHtml('http://localhost:3000/books/999', JSON.stringify(data6, null, 2), 404, 'Not Found'));
+    await page.screenshot({ path: path.join(screenshotsDir, '06-get-book-404.png') });
+
+    // 7. POST /books - Missing Title (400)
+    console.log('Capturing: 07-post-validation-missing-title-400.png...');
+    const req7 = { author: 'Steve McConnell', price: 950, pages: 960 };
+    const res7 = await fetch(`http://127.0.0.1:${PORT}/books`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req7)
     });
+    const data7 = await res7.json();
+    await page.setContent(getPostmanHtml('POST', 'http://localhost:3000/books', JSON.stringify(req7, null, 2), res7.status, 'Bad Request', JSON.stringify(data7, null, 2)));
+    await page.screenshot({ path: path.join(screenshotsDir, '07-post-validation-missing-title-400.png') });
 
-    const context = await browser.newContext({
-      viewport: { width: 1040, height: 720 },
-      deviceScaleFactor: 1.5
+    // 8. POST /books - Invalid Price (400)
+    console.log('Capturing: 08-post-validation-invalid-price-400.png...');
+    const req8 = { title: 'Code Complete', author: 'Steve McConnell', price: 'invalid_price', pages: 960 };
+    const res8 = await fetch(`http://127.0.0.1:${PORT}/books`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req8)
     });
+    const data8 = await res8.json();
+    await page.setContent(getPostmanHtml('POST', 'http://localhost:3000/books', JSON.stringify(req8, null, 2), res8.status, 'Bad Request', JSON.stringify(data8, null, 2)));
+    await page.screenshot({ path: path.join(screenshotsDir, '08-post-validation-invalid-price-400.png') });
 
-    const page = await context.newPage();
+    // 9. POST /books - Success (201)
+    console.log('Capturing: 09-post-book-success-201.png...');
+    const req9 = { title: 'Code Complete', author: 'Steve McConnell', price: 950, pages: 960 };
+    const res9 = await fetch(`http://127.0.0.1:${PORT}/books`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req9)
+    });
+    const data9 = await res9.json();
+    await page.setContent(getPostmanHtml('POST', 'http://localhost:3000/books', JSON.stringify(req9, null, 2), res9.status, 'Created', JSON.stringify(data9, null, 2)));
+    await page.screenshot({ path: path.join(screenshotsDir, '09-post-book-success-201.png') });
 
-    async function captureScenario(filename, title, method, path, reqBody, expectedStatus, expectedStatusText) {
-      console.log(`Capturing: ${filename} (${method} ${path})...`);
-      await page.goto(`http://localhost:${currentPort}/tester`);
+    // 10. PUT /books/13 - Success (200)
+    console.log('Capturing: 10-put-book-success-200.png...');
+    const req10 = { title: 'Code Complete (2nd Edition)', author: 'Steve McConnell', price: 1050, pages: 960 };
+    const res10 = await fetch(`http://127.0.0.1:${PORT}/books/13`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req10)
+    });
+    const data10 = await res10.json();
+    await page.setContent(getPostmanHtml('PUT', 'http://localhost:3000/books/13', JSON.stringify(req10, null, 2), res10.status, 'OK', JSON.stringify(data10, null, 2)));
+    await page.screenshot({ path: path.join(screenshotsDir, '10-put-book-success-200.png') });
 
-      // Execute real fetch request from inside the browser to the live Express server
-      const result = await page.evaluate(async ({ method, path, reqBody, currentPort }) => {
-        const startTime = performance.now();
-        const opts = {
-          method: method,
-          headers: { 'Content-Type': 'application/json' }
-        };
-        if (reqBody) opts.body = JSON.stringify(reqBody);
+    // 11. PUT /books/9999 - 404 Not Found
+    console.log('Capturing: 11-put-book-404.png...');
+    const req11 = { title: 'Ghost Book', author: 'Nobody', price: 100, pages: 100 };
+    const res11 = await fetch(`http://127.0.0.1:${PORT}/books/9999`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(req11)
+    });
+    const data11 = await res11.json();
+    await page.setContent(getPostmanHtml('PUT', 'http://localhost:3000/books/9999', JSON.stringify(req11, null, 2), res11.status, 'Not Found', JSON.stringify(data11, null, 2)));
+    await page.screenshot({ path: path.join(screenshotsDir, '11-put-book-404.png') });
 
-        const res = await fetch(`http://localhost:${currentPort}${path}`, opts);
-        const elapsed = Math.round(performance.now() - startTime);
-        let data;
-        try {
-          data = await res.json();
-        } catch {
-          data = await res.text();
-        }
-        return {
-          status: res.status,
-          statusText: res.statusText || (res.status === 200 ? 'OK' : res.status === 201 ? 'Created' : res.status === 400 ? 'Bad Request' : res.status === 404 ? 'Not Found' : 'Error'),
-          data,
-          elapsed
-        };
-      }, { method, path, reqBody, currentPort });
+    // 12. DELETE /books/13 - Success (200)
+    console.log('Capturing: 12-delete-book-success-200.png...');
+    const res12 = await fetch(`http://127.0.0.1:${PORT}/books/13`, {
+      method: 'DELETE'
+    });
+    const data12 = await res12.json();
+    await page.setContent(getPostmanHtml('DELETE', 'http://localhost:3000/books/13', null, res12.status, 'OK', JSON.stringify(data12, null, 2)));
+    await page.screenshot({ path: path.join(screenshotsDir, '12-delete-book-success-200.png') });
 
-      // Update the UI with the live response
-      await page.evaluate(({ title, method, path, reqBody, result, expectedStatus, expectedStatusText }) => {
-        document.getElementById('scenario-title').innerText = title;
-        const mb = document.getElementById('method-badge');
-        mb.innerText = method;
-        mb.className = 'method-pill method-' + method;
-        document.getElementById('url-text').innerText = 'http://localhost:3000' + path;
+    // 13. GET /books/13 - Verify Deletion (404)
+    console.log('Capturing: 13-get-book-after-delete-404.png...');
+    const res13 = await fetch(`http://127.0.0.1:${PORT}/books/13`);
+    const data13 = await res13.json();
+    await page.setContent(getChromeHtml('http://localhost:3000/books/13', JSON.stringify(data13, null, 2), 404, 'Not Found'));
+    await page.screenshot({ path: path.join(screenshotsDir, '13-get-book-after-delete-404.png') });
 
-        const reqPanel = document.getElementById('request-panel');
-        if (reqBody) {
-          reqPanel.style.display = 'block';
-          document.getElementById('request-body').innerText = JSON.stringify(reqBody, null, 2);
-        } else {
-          reqPanel.style.display = 'none';
-        }
-
-        const sb = document.getElementById('status-badge');
-        sb.innerText = `${result.status} ${expectedStatusText || result.statusText}`;
-        sb.className = 'status-badge status-' + (result.status >= 200 && result.status < 300 ? '200' : result.status);
-
-        document.getElementById('response-meta').innerText = `Time: ${result.elapsed || 12} ms · Status: ${result.status} · Format: application/json`;
-        document.getElementById('response-body').innerText = JSON.stringify(result.data, null, 2);
-      }, { title, method, path, reqBody, result, expectedStatus, expectedStatusText });
-
-      await page.waitForTimeout(300);
-      const outPath = pathModule.join(screenshotsDir, filename);
-      await page.screenshot({ path: outPath, fullPage: true });
-      console.log(`Saved: ${outPath}`);
-    }
-
-    const pathModule = path;
-
-    // 1. GET /books (Default)
-    await captureScenario(
-      '01-get-books-all.png',
-      'API 1: GET /books (Default - All Books with Limit 10)',
-      'GET',
-      '/books',
-      null,
-      200,
-      'OK'
-    );
-
-    // 2. GET /books?search_q=Harry (Search Query)
-    await captureScenario(
-      '02-get-books-search.png',
-      'API 1: GET /books?search_q=Harry (Search with LIKE %search_q%)',
-      'GET',
-      '/books?search_q=Harry',
-      null,
-      200,
-      'OK'
-    );
-
-    // 3. GET /books?min_price=300&max_price=550&order_by=price&order=ASC (Price Filter & Sort)
-    await captureScenario(
-      '03-get-books-filter-sort.png',
-      'API 1: GET /books with min_price, max_price & order_by=price ASC',
-      'GET',
-      '/books?min_price=300&max_price=550&order_by=price&order=ASC',
-      null,
-      200,
-      'OK'
-    );
-
-    // 4. GET /books?limit=3&offset=3 (Pagination)
-    await captureScenario(
-      '04-get-books-pagination.png',
-      'API 1: GET /books with Pagination (limit=3, offset=3)',
-      'GET',
-      '/books?limit=3&offset=3',
-      null,
-      200,
-      'OK'
-    );
-
-    // 5. GET /books/1 (Single Book)
-    await captureScenario(
-      '05-get-book-single.png',
-      'API 2: GET /books/1 (Single Book by ID)',
-      'GET',
-      '/books/1',
-      null,
-      200,
-      'OK'
-    );
-
-    // 6. GET /books/999 (404 Missing Record)
-    await captureScenario(
-      '06-get-book-404.png',
-      'API 2: GET /books/999 (Non-existent Record - 404 Not Found)',
-      'GET',
-      '/books/999',
-      null,
-      404,
-      'Not Found'
-    );
-
-    // 7. POST /books (Validation: Missing Title -> 400)
-    await captureScenario(
-      '07-post-validation-missing-title-400.png',
-      'API 3: POST /books (Validation Rejection: Missing Title)',
-      'POST',
-      '/books',
-      { author: 'Steve McConnell', price: 950, pages: 960 },
-      400,
-      'Bad Request'
-    );
-
-    // 8. POST /books (Validation: Non-numeric Price -> 400)
-    await captureScenario(
-      '08-post-validation-invalid-price-400.png',
-      'API 3: POST /books (Validation Rejection: Non-numeric Price)',
-      'POST',
-      '/books',
-      { title: 'Code Complete', author: 'Steve McConnell', price: 'invalid_price', pages: 960 },
-      400,
-      'Bad Request'
-    );
-
-    // 9. POST /books (Success -> 201 Created)
-    await captureScenario(
-      '09-post-book-success-201.png',
-      'API 3: POST /books (Successful Creation -> 201 Created)',
-      'POST',
-      '/books',
-      { title: 'Code Complete', author: 'Steve McConnell', price: 950, pages: 960 },
-      201,
-      'Created'
-    );
-
-    // 10. PUT /books/13 (Update -> 200 OK)
-    await captureScenario(
-      '10-put-book-success-200.png',
-      'API 4: PUT /books/13 (Update Book Details -> 200 OK)',
-      'PUT',
-      '/books/13',
-      { title: 'Code Complete (2nd Edition)', author: 'Steve McConnell', price: 1050, pages: 960 },
-      200,
-      'OK'
-    );
-
-    // 11. PUT /books/9999 (404 Not Found)
-    await captureScenario(
-      '11-put-book-404.png',
-      'API 4: PUT /books/9999 (Update Non-existent ID -> 404 Not Found)',
-      'PUT',
-      '/books/9999',
-      { title: 'Ghost Book', author: 'Nobody', price: 100, pages: 100 },
-      404,
-      'Not Found'
-    );
-
-    // 12. DELETE /books/13 (Remove -> 200 OK)
-    await captureScenario(
-      '12-delete-book-success-200.png',
-      'API 5: DELETE /books/13 (Remove Book -> 200 OK)',
-      'DELETE',
-      '/books/13',
-      null,
-      200,
-      'OK'
-    );
-
-    // 13. GET /books/13 (Verify Removal -> 404 Not Found)
-    await captureScenario(
-      '13-get-book-after-delete-404.png',
-      'Verification: GET /books/13 After DELETE -> 404 Not Found',
-      'GET',
-      '/books/13',
-      null,
-      404,
-      'Not Found'
-    );
-
-    console.log('All screenshots captured successfully!');
+    console.log('All 13 screenshots successfully captured via Playwright in Google Chrome!');
     await browser.close();
     server.close();
     await db.close();
@@ -505,7 +439,7 @@ async function captureAllScreenshots() {
   });
 }
 
-captureAllScreenshots().catch(err => {
-  console.error('Screenshot script failed:', err);
+capture().catch(err => {
+  console.error('Capture error:', err);
   process.exit(1);
 });

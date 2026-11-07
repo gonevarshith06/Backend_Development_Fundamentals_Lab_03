@@ -343,3 +343,4 @@ In this module, 4 typical backend bugs were analyzed and solved:
 2. **Automated Live Screenshot Generation with Playwright:**
    - *Problem:* Manual screenshot capture across 13 scenarios is tedious, error-prone, and inconsistent.
    - *Solution:* Created `take-screenshots.js` using Playwright with Google Chrome. The script starts a live Express server, triggers real `fetch` requests inside Chrome for each scenario, updates the DOM with live timing and status badges, and takes high-resolution full-page screenshots.
+

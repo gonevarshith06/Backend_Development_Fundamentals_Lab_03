@@ -5,8 +5,9 @@ const sqlite3 = require('sqlite3')
 
 const app = express()
 app.use(express.json())
+app.set('json spaces', 2)
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || 3001
 const dbPath = path.join(__dirname, 'database.db')
 let db = null
 
@@ -17,7 +18,7 @@ const initializeDBAndServer = async () => {
       filename: dbPath,
       driver: sqlite3.Database,
     })
-    app.listen(PORT, () => {
+    app.listen(PORT, '127.0.0.1', () => {
       console.log(`Server Running at http://localhost:${PORT}/`)
     })
   } catch (error) {
@@ -230,3 +231,4 @@ app.delete('/books/:bookId', async (request, response) => {
 })
 
 module.exports = app
+
