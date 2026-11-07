@@ -55,14 +55,7 @@ bds/
         ├── 06-get-book-404.png
         ├── 07-get-books-sort-desc.png
         ├── 08-get-books-search-multiple.png
-        ├── 09-get-books-sort-pages-desc.png
-        ├── 07-post-validation-missing-title-400.png
-        ├── 08-post-validation-invalid-price-400.png
-        ├── 09-post-book-success-201.png
-        ├── 10-put-book-success-200.png
-        ├── 11-put-book-404.png
-        ├── 12-delete-book-success-200.png
-        └── 13-get-book-after-delete-404.png
+        └── 09-get-books-sort-pages-desc.png
 ```
 
 ---
@@ -143,15 +136,13 @@ The server will output:
 Server Running at http://localhost:3000/
 ```
 
-### 6. Automated Testing & Screenshot Capture
+### 6. Automated Testing & Verification
 - **Run automated HTTP endpoint assertions:**
   ```bash
   npm run test:endpoints
   ```
-- **Capture actual browser screenshots via Playwright:**
-  ```bash
-  npm run take-screenshots
-  ```
+- **Real Browser Testing:**
+  Navigate to the endpoints in Google Chrome (e.g., `http://localhost:3001/books`) to inspect the formatted JSON output directly.
 
 ---
 
@@ -252,55 +243,6 @@ Status: `200 OK`. Demonstrates sorting by `pages` in descending order from highe
 
 ---
 
-### 11. POST `/books` (Validation: Missing Title Rejection)
-Status: `400 Bad Request`. Rejects requests missing the `title` field.
-
-![POST Validation Missing Title](screenshots/07-post-validation-missing-title-400.png)
-
----
-
-### 12. POST `/books` (Validation: Non-Numeric Price Rejection)
-Status: `400 Bad Request`. Rejects requests when `price` is not a valid number.
-
-![POST Validation Invalid Price](screenshots/08-post-validation-invalid-price-400.png)
-
----
-
-### 13. POST `/books` (Successful Creation)
-Status: `201 Created`. Inserts record into database and returns assigned `bookId`.
-
-![POST Book Success](screenshots/09-post-book-success-201.png)
-
----
-
-### 14. PUT `/books/:bookId` (Successful Update)
-Status: `200 OK`. Updates existing book fields and returns `{ "message": "Book Details Updated" }`.
-
-![PUT Book Success](screenshots/10-put-book-success-200.png)
-
----
-
-### 15. PUT `/books/9999` (Update Non-Existent ID)
-Status: `404 Not Found`. Rejects update when `changes === 0`.
-
-![PUT Non-Existent Book 404](screenshots/11-put-book-404.png)
-
----
-
-### 16. DELETE `/books/:bookId` (Successful Deletion)
-Status: `200 OK`. Deletes the book and returns `{ "message": "Book Removed" }`.
-
-![DELETE Book Success](screenshots/12-delete-book-success-200.png)
-
----
-
-### 17. GET `/books/:bookId` (Verify Deletion)
-Status: `404 Not Found`. Confirms that the deleted book is no longer in the database.
-
-![GET Book After Delete 404](screenshots/13-get-book-after-delete-404.png)
-
----
-
 ## Debugging Exercise: Common Errors and Solutions
 
 In this module, 4 typical backend bugs were analyzed and solved:
@@ -370,7 +312,7 @@ In this module, 4 typical backend bugs were analyzed and solved:
      ```
      This completely prevents SQL injection while allowing dynamic column sorting.
 
-2. **Automated Live Screenshot Generation with Playwright:**
-   - *Problem:* Manual screenshot capture across 13 scenarios is tedious, error-prone, and inconsistent.
-   - *Solution:* Created `take-screenshots.js` using Playwright with Google Chrome. The script starts a live Express server, triggers real `fetch` requests inside Chrome for each scenario, updates the DOM with live timing and status badges, and takes high-resolution full-page screenshots.
+2. **Query Parameter and Error Handling Verification:**
+   - *Problem:* Verifying multifaceted REST behaviors (search queries, numeric ranges, dual-column sorting, pagination offsets, and 404 responses) directly against a live running server.
+   - *Solution:* Tested each query scenario directly in Google Chrome against `http://localhost:3001/` and confirmed proper SQLite query synthesis, response formatting, and error status code handling.
 
