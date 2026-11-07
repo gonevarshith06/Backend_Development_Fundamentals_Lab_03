@@ -15,7 +15,7 @@
 |---|---|---|---|
 | Lab 01 | Node.js and Express server | Completed | [Lab 01 Repository](https://github.com/gonevarshith06/Backend_Development_Fundamentals_Lab_01) |
 | Lab 02 | SQLite database and CRUD routes | Completed | [lab-02/](./lab-02/README.md) |
-| Lab 03 | Coming Soon | Planned | - |
+| Lab 03 | REST API, query parameters, validation, debugging | Completed | [lab-03/](./lab-03/README.md) |
 | Lab 04 | Coming Soon | Planned | - |
 | Lab 05 | Coming Soon | Planned | - |
 | Lab 06 | Coming Soon | Planned | - |
