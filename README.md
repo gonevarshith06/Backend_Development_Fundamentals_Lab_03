@@ -9,6 +9,12 @@
 
 ---
 
+## Group Assignment
+- **Project:** SeedShare Garden API (`JP-GAI2C-G02`)
+- **Directory:** [`group assignment bdf/`](./group%20assignment%20bdf/)
+
+---
+
 ## Course Labs Directory
 
 | Lab | Title | Status | Link |

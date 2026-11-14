@@ -3,3 +3,5 @@ node_modules/
 .DS_Store
 *.log
 lab-01/
+.vscode/
+.git_backup_inner/
