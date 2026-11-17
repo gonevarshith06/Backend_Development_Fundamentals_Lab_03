@@ -35,7 +35,16 @@ bds/
     ├── init-db.js
     ├── server.js
     ├── test-endpoints.js
-    └── README.md
+    ├── README.md
+    └── screenshots/
+        ├── 01-get-root-welcome.png
+        ├── 02-get-books-all.png
+        ├── 03-get-book-single.png
+        ├── 04-post-add-book.png
+        ├── 05-put-update-book.png
+        ├── 06-delete-book.png
+        ├── 07-get-book-deleted-404.png
+        └── 08-get-book-404.png
 ```
 
 ---
@@ -135,54 +144,71 @@ npm run test:endpoints
 
 ---
 
-## Endpoint Verification & Sample Responses
+## Screenshots & Verification
 
-All CRUD endpoints were verified using `npm run test:endpoints`:
+All CRUD endpoints were verified directly against the live Express server in Google Chrome:
 
-### 1. GET `/` (Root Welcome)
+### 1. GET `/` (Root Welcome & Student Metadata)
 - **Status:** `200 OK`
 - Returns API overview and student information (`Varshith Gone · 252U1R9167 · Joel Prashanth D`).
+
+![Root Welcome](screenshots/01-get-root-welcome.png)
 
 ---
 
 ### 2. GET `/books/` (Retrieve All Books)
 - **Status:** `200 OK`
-- Retrieves the full array of book records from SQLite.
+- Retrieves the full array of initial seeded records from SQLite.
+
+![Retrieve All Books](screenshots/02-get-books-all.png)
 
 ---
 
 ### 3. GET `/books/:bookId/` (Retrieve Single Book)
-- **Status:** `200 OK` / `404 Not Found`
-- Retrieves book details for a specific ID using parameterized SQL.
+- **Status:** `200 OK`
+- Retrieves book details for ID `1` using parameterized SQL with `?` placeholder.
+
+![Retrieve Single Book](screenshots/03-get-book-single.png)
 
 ---
 
 ### 4. POST `/books/` (Add New Book)
 - **Status:** `201 Created`
-- Inserts a new book into SQLite and returns the newly generated `bookId`.
+- Inserts a new book into SQLite and returns the assigned `bookId: 11`.
+
+![Add New Book](screenshots/04-post-add-book.png)
 
 ---
 
-### 5. PUT `/books/:bookId/` (Update Book)
-- **Status:** `200 OK` / `404 Not Found`
-- Updates book details in SQLite.
+### 5. PUT `/books/:bookId/` (Update Book Details)
+- **Status:** `200 OK`
+- Updates book details in SQLite for ID `11`.
+
+![Update Book](screenshots/05-put-update-book.png)
 
 ---
 
 ### 6. DELETE `/books/:bookId/` (Remove Book)
-- **Status:** `200 OK` / `404 Not Found`
-- Removes the book record from SQLite.
+- **Status:** `200 OK`
+- Removes book ID `11` from the SQLite database.
+
+![Delete Book](screenshots/06-delete-book.png)
 
 ---
 
-### 7. GET `/books/:bookId/` (Verification of Deletion)
+### 7. GET `/books/:bookId/` (Verification of Deletion - 404 Not Found)
 - **Status:** `404 Not Found`
-- Confirms the record was deleted.
+- Confirms that the deleted book ID `11` is no longer present.
+
+![Deleted Book 404](screenshots/07-get-book-deleted-404.png)
 
 ---
 
-### 8. SQLite CLI Verification
-- Direct SQLite queries (`sqlite3 book.db "SELECT * FROM book;"`) confirm data consistency after all CRUD operations.
+### 8. GET `/books/999/` (Arbitrary Non-Existent ID - 404 Not Found)
+- **Status:** `404 Not Found`
+- Confirms robust error handling for unseeded IDs.
+
+![Non-Existent Book 404](screenshots/08-get-book-404.png)
 
 ---
 

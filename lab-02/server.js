@@ -5,6 +5,7 @@ const sqlite3 = require('sqlite3');
 
 const app = express();
 app.use(express.json());
+app.set('json spaces', 2);
 
 const PORT = process.env.PORT || 3000;
 const dbPath = path.join(__dirname, 'book.db');
@@ -208,6 +209,51 @@ app.delete('/books/:bookId/', async (req, res) => {
 
     await db.run(deleteBookQuery, [bookId]);
 
+    res.status(200).json({
+      message: 'Book Deleted Successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Browser Verification Helpers
+app.get('/test/post-add-book', async (req, res) => {
+  try {
+    const addBookQuery = `
+      INSERT INTO book (title, author, price, pages)
+      VALUES (?, ?, ?, ?);
+    `;
+    const dbResponse = await db.run(addBookQuery, ['Refactoring', 'Martin Fowler', 750, 448]);
+    res.status(201).json({
+      message: 'Book Added Successfully',
+      bookId: dbResponse.lastID
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/test/put-update-book', async (req, res) => {
+  try {
+    const updateBookQuery = `
+      UPDATE book
+      SET title = ?, author = ?, price = ?, pages = ?
+      WHERE id = 11;
+    `;
+    await db.run(updateBookQuery, ['Refactoring (2nd Edition)', 'Martin Fowler', 799, 450]);
+    res.status(200).json({
+      message: 'Book Updated Successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/test/delete-book', async (req, res) => {
+  try {
+    const deleteBookQuery = `DELETE FROM book WHERE id = 11;`;
+    await db.run(deleteBookQuery);
     res.status(200).json({
       message: 'Book Deleted Successfully'
     });
